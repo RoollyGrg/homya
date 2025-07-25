@@ -5,7 +5,7 @@ const Product = require('../models/Product');
 // GET all products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find().sort({ createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });

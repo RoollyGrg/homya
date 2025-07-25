@@ -94,9 +94,10 @@ router.post('/cart/remove', async (req, res) => {
   }
 });
 
-// Clear cart
+// Clear cart for a user
 router.post('/cart/clear', async (req, res) => {
   const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
   try {
     const consumer = await Consumer.findOne({ email });
     if (!consumer) return res.status(404).json({ error: 'User not found' });
@@ -104,7 +105,7 @@ router.post('/cart/clear', async (req, res) => {
     await consumer.save();
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to clear cart' });
   }
 });
 
