@@ -23,11 +23,6 @@ mongoose.connect('mongodb://localhost:27017/ikea_ecommerce', {
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Product routes placeholder
-app.get('/test', (req, res) => {
-  res.json({ message: 'Backend is working!' });
-});
-
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/consumer', require('./routes/consumer'));
 app.use('/api/products', require('./routes/products'));
