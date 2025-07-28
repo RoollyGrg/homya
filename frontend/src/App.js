@@ -506,7 +506,7 @@ function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert }
 
   // Filter products by selected category
   const filteredProducts = selectedCategory 
-    ? products.filter(product => product.category === selectedCategory)
+    ? products.filter(product => product.category && product.category === selectedCategory)
     : products;
 
   if (loading) return <div>Loading products...</div>;
@@ -694,7 +694,7 @@ function Admin({ setAlert }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setFeedback('');
-    if (!form.name || !form.description || !form.price || !form.imageUrl || !form.category) {
+    if (!form.name || !form.description || !form.price || !form.imageUrl) {
       setFeedback('All fields are required.');
       setAlert('All fields are required.', 'error');
       return;
@@ -762,33 +762,7 @@ function Admin({ setAlert }) {
       });
   };
 
-  // Add category
-  const handleAddCategory = (e) => {
-    e.preventDefault();
-    if (!categoryForm.name) {
-      setAlert('Category name is required.', 'error');
-      return;
-    }
-    fetch('http://localhost:5001/api/categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(categoryForm),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setAlert(data.error, 'error');
-        } else {
-          setCategoryForm({ name: '', description: '', imageUrl: '' });
-          setShowCategoryForm(false);
-          fetchCategories();
-          setAlert('Category added!', 'success');
-        }
-      })
-      .catch(() => {
-        setAlert('Error adding category.', 'error');
-      });
-  };
+
 
 
 
