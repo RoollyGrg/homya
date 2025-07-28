@@ -474,11 +474,24 @@ function Login({ setAdminLoggedIn, setAlert }) {
 
 function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert }) {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch categories from products
+    fetch('http://localhost:5001/api/products/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch categories:', err);
+      });
+
+    // Fetch products
     fetch('http://localhost:5001/api/products')
       .then((res) => res.json())
       .then((data) => {
@@ -490,6 +503,11 @@ function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert }
         setLoading(false);
       });
   }, []);
+
+  // Filter products by selected category
+  const filteredProducts = selectedCategory 
+    ? products.filter(product => product.category === selectedCategory)
+    : products;
 
   if (loading) return <div>Loading products...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -516,24 +534,54 @@ function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert }
     }
   };
   const content = (
-    <div className="products-grid">
-      {products.length === 0 ? (
-        <div>No products found.</div>
-      ) : (
-        products.map((product) => (
-          <div className="product-card clickable" key={product._id} onClick={() => navigate(`/product/${product._id}`)} style={{ cursor: 'pointer' }}>
-            <img src={product.imageUrl} alt={product.name} className="product-image" />
-            <div className="product-price">${product.price}</div>
-            <h3>{product.name}</h3>
-            <div className="product-actions" onClick={e => e.stopPropagation()}>
-              <button className="buy-now-btn" onClick={() => handleBuyOrCart(product, 'buy')}>Buy now</button>
-              <button className="add-to-cart-btn" aria-label="Add to cart" onClick={() => handleBuyOrCart(product, 'cart')}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              </button>
-            </div>
+    <div>
+      {/* Categories Section */}
+      <div className="categories-section">
+        <div className="categories-grid">
+          <div 
+            className={`category-card ${!selectedCategory ? 'active' : ''}`}
+            onClick={() => setSelectedCategory(null)}
+          >
+            <div className="category-name">All Products</div>
           </div>
-        ))
-      )}
+          {categories.map((category) => (
+            <div 
+              key={category}
+              className={`category-card ${selectedCategory === category ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              <div className="category-name">{category}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Products Section */}
+      <div className="products-section">
+        <h2>{selectedCategory ? selectedCategory + ' Products' : 'All Products'}</h2>
+        <div className="products-grid">
+          {filteredProducts.length === 0 ? (
+            <div>No products found in this category.</div>
+          ) : (
+            filteredProducts.map((product) => (
+              <div className="product-card clickable" key={product._id} onClick={() => navigate(`/product/${product._id}`)} style={{ cursor: 'pointer' }}>
+                <img src={product.imageUrl} alt={product.name} className="product-image" />
+                <div className="product-price">${product.price}</div>
+                <h3>{product.name}</h3>
+                {product.category && (
+                  <div className="product-category">{product.category}</div>
+                )}
+                <div className="product-actions" onClick={e => e.stopPropagation()}>
+                  <button className="buy-now-btn" onClick={() => handleBuyOrCart(product, 'buy')}>Buy now</button>
+                  <button className="add-to-cart-btn" aria-label="Add to cart" onClick={() => handleBuyOrCart(product, 'cart')}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
   return noContainer ? content : <div className="container">{content}</div>;
@@ -591,14 +639,15 @@ function Cart({ cart, removeFromCart, setAlert, setCart, consumer }) {
 
 function Admin({ setAlert }) {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', price: '', imageUrl: '' });
+  const [form, setForm] = useState({ name: '', description: '', price: '', imageUrl: '', category: '' });
   const [editingId, setEditingId] = useState(null);
   const [feedback, setFeedback] = useState('');
   const navigate = useNavigate();
 
-  // Fetch products
+  // Fetch products and categories
   const fetchProducts = () => {
     setLoading(true);
     fetch('http://localhost:5001/api/products')
@@ -620,8 +669,20 @@ function Admin({ setAlert }) {
       });
   };
 
+  const fetchCategories = () => {
+    fetch('http://localhost:5001/api/products/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data);
+      })
+      .catch(() => {
+        console.error('Failed to fetch categories');
+      });
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   // Handle form input
@@ -633,7 +694,7 @@ function Admin({ setAlert }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setFeedback('');
-    if (!form.name || !form.description || !form.price || !form.imageUrl) {
+    if (!form.name || !form.description || !form.price || !form.imageUrl || !form.category) {
       setFeedback('All fields are required.');
       setAlert('All fields are required.', 'error');
       return;
@@ -650,6 +711,7 @@ function Admin({ setAlert }) {
         description: form.description,
         price: parseFloat(form.price),
         imageUrl: form.imageUrl,
+        category: form.category,
       }),
     })
       .then((res) => res.json())
@@ -659,7 +721,7 @@ function Admin({ setAlert }) {
           setAlert(data.error, 'error');
         } else {
           setFeedback(editingId ? 'Product updated!' : 'Product added!');
-          setForm({ name: '', description: '', price: '', imageUrl: '' });
+          setForm({ name: '', description: '', price: '', imageUrl: '', category: '' });
           setEditingId(null);
           fetchProducts();
           setAlert(editingId ? 'Product updated!' : 'Product added!', 'success');
@@ -678,6 +740,7 @@ function Admin({ setAlert }) {
       description: product.description,
       price: product.price,
       imageUrl: product.imageUrl,
+      category: product.category || '',
     });
     setEditingId(product._id);
     setFeedback('Editing product...');
@@ -699,9 +762,41 @@ function Admin({ setAlert }) {
       });
   };
 
+  // Add category
+  const handleAddCategory = (e) => {
+    e.preventDefault();
+    if (!categoryForm.name) {
+      setAlert('Category name is required.', 'error');
+      return;
+    }
+    fetch('http://localhost:5001/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(categoryForm),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          setAlert(data.error, 'error');
+        } else {
+          setCategoryForm({ name: '', description: '', imageUrl: '' });
+          setShowCategoryForm(false);
+          fetchCategories();
+          setAlert('Category added!', 'success');
+        }
+      })
+      .catch(() => {
+        setAlert('Error adding category.', 'error');
+      });
+  };
+
+
+
   return (
     <div>
       <h2 style={{ marginLeft: '2rem' }}>Admin Page</h2>
+      
+      {/* Product Management */}
       <form className="admin-form" onSubmit={handleSubmit}>
         <h3>{editingId ? 'Edit Product' : 'Add Product'}</h3>
         <input
@@ -732,9 +827,16 @@ function Admin({ setAlert }) {
           value={form.imageUrl}
           onChange={handleChange}
         />
+        <input
+          type="text"
+          name="category"
+          placeholder="Category (e.g., Beds, Furniture, Electronics)"
+          value={form.category}
+          onChange={handleChange}
+        />
         <button type="submit">{editingId ? 'Update' : 'Add'}</button>
         {editingId && (
-          <button type="button" onClick={() => { setEditingId(null); setForm({ name: '', description: '', price: '', imageUrl: '' }); setFeedback(''); }}>Cancel</button>
+          <button type="button" onClick={() => { setEditingId(null); setForm({ name: '', description: '', price: '', imageUrl: '', category: '' }); setFeedback(''); }}>Cancel</button>
         )}
         {feedback && <div className="feedback">{feedback}</div>}
       </form>
@@ -751,6 +853,7 @@ function Admin({ setAlert }) {
               <th>Image</th>
               <th>Name</th>
               <th>Description</th>
+              <th>Category</th>
               <th>Price</th>
               <th>Actions</th>
             </tr>
@@ -761,6 +864,7 @@ function Admin({ setAlert }) {
                 <td><img src={product.imageUrl} alt={product.name} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6 }} /></td>
                 <td>{product.name}</td>
                 <td>{product.description}</td>
+                <td>{product.category || 'No Category'}</td>
                 <td>${product.price}</td>
                 <td>
                   <button onClick={() => handleEdit(product)}>Edit</button>
@@ -1014,6 +1118,11 @@ function ProductDetails({ setLoginDialogOpen, consumer, setAlert }) {
         <img src={product.imageUrl} alt={product.name} className="product-details-image" />
         <h2>{product.name}</h2>
         <div className="product-details-price">${product.price}</div>
+        {product.category && (
+          <div className="product-details-category">
+            Category: <span style={{ color: 'var(--main-green)', fontWeight: 'bold' }}>{product.category}</span>
+          </div>
+        )}
         <p className="product-details-description">{product.description}</p>
       </div>
       <div className="product-details-right">

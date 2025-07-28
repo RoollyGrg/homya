@@ -12,11 +12,31 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET products by category
+router.get('/category/:category', async (req, res) => {
+  try {
+    const products = await Product.find({ category: req.params.category }).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET all unique categories
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Product.distinct('category');
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST a new product
 router.post('/', async (req, res) => {
   try {
-    const { name, description, price, imageUrl } = req.body;
-    const newProduct = new Product({ name, description, price, imageUrl });
+    const { name, description, price, imageUrl, category } = req.body;
+    const newProduct = new Product({ name, description, price, imageUrl, category });
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (err) {
@@ -27,10 +47,10 @@ router.post('/', async (req, res) => {
 // PUT update a product
 router.put('/:id', async (req, res) => {
   try {
-    const { name, description, price, imageUrl } = req.body;
+    const { name, description, price, imageUrl, category } = req.body;
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, description, price, imageUrl },
+      { name, description, price, imageUrl, category },
       { new: true }
     );
     if (!updatedProduct) return res.status(404).json({ error: 'Product not found' });
