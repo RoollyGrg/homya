@@ -61,6 +61,17 @@ A full-stack e-commerce application built with React, Node.js, Express, and Mong
    node init-database.js
    ```
 
+## Import Default Data
+
+After installing dependencies and ensuring MongoDB is running, import the default product and admin data:
+
+```bash
+cd backend
+node import-default-data.js
+```
+
+This will populate your database with the default products and admin users found in `default-products.json` and `default-admins.json`.
+
 5. **Start the backend server**
    ```bash
    cd backend
