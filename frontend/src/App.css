@@ -18,6 +18,7 @@ body {
   padding: 1rem 2rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   min-height: 36px;
+  gap: 1rem;
 }
 
 .navbar-logo {
@@ -33,6 +34,7 @@ body {
   margin: 0;
   padding: 0;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .navbar-links a {
@@ -45,6 +47,32 @@ body {
 
 .navbar-links a:hover {
   color: #fff;
+}
+
+.navbar-search {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 2rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--main-yellow);
+  border-radius: 20px;
+  background: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.search-input::placeholder {
+  color: #999;
 }
 
 
@@ -824,6 +852,38 @@ body {
   font-weight: 700;
   padding: 0.7rem 0;
   border-radius: 6px;
+}
+
+.card-details-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f8f8;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.card-details-form input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-row1 {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.card-row2 {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.card-row2 input {
+  flex: 1;
+  margin-bottom: 0;
 }
 .checkout-divider {
   border: none;

@@ -19,7 +19,11 @@ const orderSchema = new mongoose.Schema({
     postalCode: String,
     country: String,
   },
-  paymentMethod: { type: String, enum: ['Cash', 'Credit Card', 'Online Payment'], required: true },
+  paymentMethod: { type: String, enum: ['Cash', 'Credit/Debit Card'], required: true },
+  cardDetails: {
+    cardNumber: String,
+    expiryDate: String,
+  },
   total: { type: Number, required: true },
   status: { type: String, default: 'Placed' },
   createdAt: { type: Date, default: Date.now },

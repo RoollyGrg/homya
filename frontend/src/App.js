@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import './App.css';
 
-function Navbar({ cart, adminLoggedIn, handleAdminLogout, consumer, handleConsumerLogout, profileOpen, setProfileOpen, profileRef }) {
+function Navbar({ cart, adminLoggedIn, handleAdminLogout, consumer, handleConsumerLogout, profileOpen, setProfileOpen, profileRef, searchQuery, setSearchQuery }) {
   const location = useLocation();
+  const navigate = useNavigate();
   // Hide login/signup on auth pages
   const hideAuthLinks = [
     '/consumer/auth',
@@ -11,9 +12,24 @@ function Navbar({ cart, adminLoggedIn, handleAdminLogout, consumer, handleConsum
     '/consumer/signup'
   ].includes(location.pathname);
 
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <nav className="navbar">
-      <div className="navbar-logo">HOMYA Shop</div>
+      <div className="navbar-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>HOMYA Shop</div>
+      {!adminLoggedIn && (
+        <div className="navbar-search">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+        </div>
+      )}
       <ul className="navbar-links">
         {/* Admin-only navbar */}
         {adminLoggedIn ? (
@@ -24,7 +40,6 @@ function Navbar({ cart, adminLoggedIn, handleAdminLogout, consumer, handleConsum
           </>
         ) : (
           <>
-            <li><Link to="/">Home</Link></li>
             <li><Link to="/cart">Cart ({cart.length})</Link></li>
             {/* My Orders link for consumers */}
             {consumer && <li><Link to="/my-orders">My Orders</Link></li>}
@@ -105,6 +120,7 @@ function App() {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [alert, setAlertState] = useState({ open: false, message: '', type: 'info' });
   const [authLoaded, setAuthLoaded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   // Hide footer on admin, admin login, cart, and login/signup pages
@@ -236,9 +252,11 @@ function App() {
         profileOpen={profileOpen}
         setProfileOpen={setProfileOpen}
         profileRef={profileRef}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
       <Routes>
-        <Route path="/" element={<Home addToCart={addToCart} consumer={consumer} noContainer={true} setLoginDialogOpen={setLoginDialogOpen} setAlert={setAlert} />} />
+        <Route path="/" element={<Home addToCart={addToCart} consumer={consumer} noContainer={true} setLoginDialogOpen={setLoginDialogOpen} setAlert={setAlert} searchQuery={searchQuery} />} />
         <Route path="/product/:id" element={<ProductDetails setLoginDialogOpen={setLoginDialogOpen} consumer={consumer} setAlert={setAlert} />} />
         <Route path="/cart" element={consumer ? <Cart cart={cart} removeFromCart={removeFromCart} setAlert={setAlert} setCart={setCart} consumer={consumer} /> : <Navigate to="/consumer/login" />} />
         <Route path="/checkout" element={<Checkout consumer={consumer} setAlert={setAlert} setCart={setCart} />} />
@@ -472,7 +490,7 @@ function Login({ setAdminLoggedIn, setAlert }) {
   );
 }
 
-function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert }) {
+function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert, searchQuery }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -504,10 +522,14 @@ function Home({ addToCart, consumer, noContainer, setLoginDialogOpen, setAlert }
       });
   }, []);
 
-  // Filter products by selected category
-  const filteredProducts = selectedCategory 
-    ? products.filter(product => product.category && product.category === selectedCategory)
-    : products;
+  // Filter products by selected category and search query
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = !selectedCategory || (product.category && product.category === selectedCategory);
+    const matchesSearch = !searchQuery || 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
 
   if (loading) return <div>Loading products...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -949,7 +971,15 @@ function AdminOrders({ setAlert }) {
                   {order.address.street}, {order.address.city}<br/>
                   {order.address.postalCode}, {order.address.country}
                 </td>
-                <td>{order.paymentMethod}</td>
+                <td>
+                  {order.paymentMethod}
+                  {order.paymentMethod === 'Credit/Debit Card' && order.cardDetails && (
+                    <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.3rem' }}>
+                      Card: ****{order.cardDetails.cardNumber.slice(-4)}<br/>
+                      Expires: {order.cardDetails.expiryDate}
+                    </div>
+                  )}
+                </td>
                 <td>${order.total.toFixed(2)}</td>
                 <td>
                   <select
@@ -1020,7 +1050,15 @@ function AdminOrders({ setAlert }) {
               {viewOrder.address.street}, {viewOrder.address.city}<br/>
               {viewOrder.address.postalCode}, {viewOrder.address.country}
             </div>
-            <div style={{ marginTop: 8 }}><b>Payment:</b> {viewOrder.paymentMethod}</div>
+            <div style={{ marginTop: 8 }}>
+              <b>Payment:</b> {viewOrder.paymentMethod}
+              {viewOrder.paymentMethod === 'Credit/Debit Card' && viewOrder.cardDetails && (
+                <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.3rem' }}>
+                  Card: ****{viewOrder.cardDetails.cardNumber.slice(-4)}<br/>
+                  Expires: {viewOrder.cardDetails.expiryDate}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1128,6 +1166,11 @@ function Checkout({ consumer, setAlert, setCart }) {
     country: '',
   });
   const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [cardDetails, setCardDetails] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: ''
+  });
   const [loading, setLoading] = useState(false);
   const products = location.state?.products || [];
   const fromCart = location.state?.fromCart;
@@ -1138,7 +1181,8 @@ function Checkout({ consumer, setAlert, setCart }) {
   const delivery = 20;
   const tax = Math.round(subtotal * 0.10 * 100) / 100;
   const total = subtotal + delivery + tax;
-  const allFieldsFilled = Object.values(address).every(Boolean) && paymentMethod;
+  const allFieldsFilled = Object.values(address).every(Boolean) && paymentMethod && 
+    (paymentMethod === 'Cash' || (paymentMethod === 'Credit/Debit Card' && cardDetails.cardNumber && cardDetails.expiryDate && cardDetails.cvv));
   const handleInput = e => {
     setAddress({ ...address, [e.target.name]: e.target.value });
   };
@@ -1159,6 +1203,10 @@ function Checkout({ consumer, setAlert, setCart }) {
           products,
           address,
           paymentMethod,
+          cardDetails: paymentMethod === 'Credit/Debit Card' ? {
+            cardNumber: cardDetails.cardNumber,
+            expiryDate: cardDetails.expiryDate
+          } : null,
           total,
         })
       });
@@ -1225,9 +1273,41 @@ function Checkout({ consumer, setAlert, setCart }) {
             <div className="checkout-payment-label">Payment Method:</div>
             <div className="checkout-payment-options">
               <label><input type="radio" name="paymentMethod" value="Cash" checked={paymentMethod === 'Cash'} onChange={e => setPaymentMethod(e.target.value)} /> Cash</label>
-              <label><input type="radio" name="paymentMethod" value="Credit Card" checked={paymentMethod === 'Credit Card'} onChange={e => setPaymentMethod(e.target.value)} /> Credit Card</label>
-              <label><input type="radio" name="paymentMethod" value="Online Payment" checked={paymentMethod === 'Online Payment'} onChange={e => setPaymentMethod(e.target.value)} /> Online Payment</label>
+              <label><input type="radio" name="paymentMethod" value="Credit/Debit Card" checked={paymentMethod === 'Credit/Debit Card'} onChange={e => setPaymentMethod(e.target.value)} /> Credit/Debit Card</label>
             </div>
+            
+            {paymentMethod === 'Credit/Debit Card' && (
+              <div className="card-details-form">
+                <div className="card-row1">
+                <input
+                  type="text"
+                  placeholder="Card Number"
+                  value={cardDetails.cardNumber}
+                  onChange={e => setCardDetails({...cardDetails, cardNumber: e.target.value})}
+                  maxLength="16"
+                  required
+                />
+                </div>
+                <div className="card-row2">
+                  <input
+                    type="text"
+                    placeholder="MM/YY"
+                    value={cardDetails.expiryDate}
+                    onChange={e => setCardDetails({...cardDetails, expiryDate: e.target.value})}
+                    maxLength="5"
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="CVV"
+                    value={cardDetails.cvv}
+                    onChange={e => setCardDetails({...cardDetails, cvv: e.target.value})}
+                    maxLength="4"
+                    required
+                  />
+                </div>
+              </div>
+            )}
             <button className="checkout-btn checkout-btn-wide" type="submit" disabled={!allFieldsFilled || loading}>
               {loading ? 'Placing Order...' : 'Checkout'}
             </button>
@@ -1333,7 +1413,15 @@ function MyOrders({ consumer, setAlert }) {
                   {order.address.street}, {order.address.city}<br/>
                   {order.address.postalCode}, {order.address.country}
                 </div>
-                <div><b>Payment:</b> {order.paymentMethod}</div>
+                <div>
+                  <b>Payment:</b> {order.paymentMethod}
+                  {order.paymentMethod === 'Credit/Debit Card' && order.cardDetails && (
+                    <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.3rem' }}>
+                      Card: ****{order.cardDetails.cardNumber.slice(-4)}<br/>
+                      Expires: {order.cardDetails.expiryDate}
+                    </div>
+                  )}
+                </div>
               </div>
               {/* Cancel button (bottom right) */}
               {order.status === 'Placed' && (
