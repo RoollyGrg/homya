@@ -257,7 +257,7 @@ function App() {
       />
       <Routes>
         <Route path="/" element={<Home addToCart={addToCart} consumer={consumer} noContainer={true} setLoginDialogOpen={setLoginDialogOpen} setAlert={setAlert} searchQuery={searchQuery} />} />
-        <Route path="/product/:id" element={<ProductDetails setLoginDialogOpen={setLoginDialogOpen} consumer={consumer} setAlert={setAlert} />} />
+        <Route path="/product/:id" element={<ProductDetails setLoginDialogOpen={setLoginDialogOpen} consumer={consumer} setAlert={setAlert} addToCart={addToCart} />} />
         <Route path="/cart" element={consumer ? <Cart cart={cart} removeFromCart={removeFromCart} setAlert={setAlert} setCart={setCart} consumer={consumer} /> : <Navigate to="/consumer/login" />} />
         <Route path="/checkout" element={<Checkout consumer={consumer} setAlert={setAlert} setCart={setCart} />} />
         <Route path="/my-orders" element={<MyOrders consumer={consumer} setAlert={setAlert} />} />
@@ -1078,7 +1078,7 @@ function AdminOrders({ setAlert }) {
   );
 }
 
-function ProductDetails({ setLoginDialogOpen, consumer, setAlert }) {
+function ProductDetails({ setLoginDialogOpen, consumer, setAlert, addToCart }) {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1116,8 +1116,8 @@ function ProductDetails({ setLoginDialogOpen, consumer, setAlert }) {
         },
       });
     } else {
-      // Add to cart logic (if you want to keep it here)
-      setAlert('Added to cart!', 'success');
+      // Add to cart
+      addToCart(product);
     }
   };
 
@@ -1145,7 +1145,7 @@ function ProductDetails({ setLoginDialogOpen, consumer, setAlert }) {
         </div>
         <div className="product-details-actions">
           <button className="buy-now-btn" onClick={() => handleBuyOrCart('buy')}>Buy now</button>
-          <button className="add-to-cart-btn" onClick={() => handleBuyOrCart('cart')} style={{ borderRadius: 6, marginLeft: 12, width: 48, height: 48 }}>
+          <button className="add-to-cart-btn" onClick={() => handleBuyOrCart('cart')}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           </button>
         </div>
